@@ -1,0 +1,73 @@
+containerDefaults:
+  dns: 172.17.0.1
+  restart: always
+  swappiness: 0
+
+
+container:
+
+  grafana:
+    maxContainers: 1
+    image: grafana/grafana
+    volumes:
+      - source: /home/claudio/docker/grafana/lib
+        target: /var/lib/grafana
+      - source: /home/claudio/docker/grafana/conf
+        target: /etc/grafana
+      - source: /home/claudio/docker/grafana/log
+        target: /var/log/grafana
+    expose:
+      - 3000
+    nginx:
+      backendPort: 3000
+
+  prometheus:
+    maxContainers: 1
+    image: prom/prometheus
+    volumes:
+      - source: /home/claudio/docker/prometheus/conf
+        target: /etc/prometheus/
+      - source: /home/claudio/docker/prometheus/data
+        target: /prometheus
+    expose:
+      - 9090
+    command:
+      - '-config.file=/etc/prometheus/prometheus.yml'
+      - '-storage.local.path=/prometheus'
+
+
+  node-exporter:
+    maxContainers: 1
+    image: prom/node-exporter
+    volumes:
+      - source: /proc
+        target: /host/proc:ro
+      - source: /sys
+        target: /host/sys:ro
+      - source: /
+        target: /rootfs:ro
+    expose:
+      - 9100
+    command:
+      - '-collector.procfs=/host/proc'
+      - '-collector.sysfs=/host/sysfs'
+      - '-collector.filesystem.ignored-mount-points="^/(sys|proc|dev|host|etc)($$|/)"'
+
+  cadvisor:
+    maxContainers: 1
+    image: google/cadvisor
+    volumes:
+      - source: /
+        target: /rootfs:ro
+      - source: /var/run
+        target: /var/run
+      - source: /sys
+        target: /sys:ro
+      - source: /var/lib/docker
+        target: /var/lib/docker:ro
+    expose:
+      - 8080
+    command:
+      - '-docker tcp://172.17.0.1:2375'
+
+
